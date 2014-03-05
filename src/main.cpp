@@ -956,6 +956,7 @@ unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fP
     }
     else
     {
+	    printf("Retarget for Proof of Stake");
 	    // version: target change every block
 	    // version: retarget with exponential moving toward target spacing    
 	    int64 nTargetSpacing = fProofOfStake? STAKE_TARGET_SPACING : min(nTargetSpacingWorkMax, (int64) STAKE_TARGET_SPACING * (1 + pindexLast->nHeight - pindexPrev->nHeight));
@@ -1023,6 +1024,7 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
 
 	    /// debug print
 	    printf("Difficulty Retarget - Kimoto Gravity Well\n");
+	    printf("BlockLastSolved height: %d  pindexLast height: %d\n", BlockLastSolved->nHeight, pindexLast->nHeight);
 	    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
 	    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
 	    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
@@ -3747,6 +3749,7 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, CWallet* pwallet, bool fProofOfS
 
     if (fProofOfStake)  // attemp to find a coinstake
     {
+	printf("Attempt to find a coinstake");
         pblock->nBits = GetNextTargetRequired(pindexPrev, true);
         CTransaction txCoinStake;
         int64 nSearchTime = txCoinStake.nTime; // search to current time

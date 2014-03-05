@@ -22,8 +22,8 @@ fi
    # TIME="$(git log -n 1 --format="%ci")"
 #fi
 
-DESC="v0.8.0-vcoin"
-TIME="2014-02-23 17:51:00 +0500"
+DESC="v0.8.1-vcoin"
+TIME="2014-03-05 12:05:00 +0500"
 
 if [ -n "$DESC" ]; then
     NEWINFO="#define BUILD_DESC \"$DESC\""

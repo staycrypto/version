@@ -34,7 +34,13 @@ static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const int64 MIN_TX_FEE = CENT;
 static const int64 MIN_RELAY_TX_FEE = CENT;
-static const int64 MAX_MONEY = 2500000 * COIN;
+//static const int64 MAX_MONEY = 2500000 * COIN;
+// Bugfix:
+// Bump up MAX_MONEY so there is headroom for stake/interest payments
+// 2.5M maximum coins mined via proof of work
+// at 10% per year interest, a max_money of 5M is enough headroom for
+// over 5 years of interest payments
+static const int64 MAX_MONEY = 5000000 * COIN;
 static const int64 MAX_MINT_PROOF_OF_WORK = 100 * COIN;
 static const int64 MIN_TXOUT_AMOUNT = MIN_TX_FEE;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }

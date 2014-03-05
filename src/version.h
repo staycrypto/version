@@ -15,7 +15,7 @@
 #define CLIENT_VERSION_MAJOR       0
 #define CLIENT_VERSION_MINOR       8
 #define CLIENT_VERSION_REVISION    9
-#define CLIENT_VERSION_BUILD       2
+#define CLIENT_VERSION_BUILD       3
 
 static const int CLIENT_VERSION =
                            1000000 * CLIENT_VERSION_MAJOR
@@ -30,7 +30,7 @@ extern const std::string CLIENT_DATE;
 // version version - intended for display purpose ONLY
 #define VOIN_VERSION_MAJOR       0
 #define VOIN_VERSION_MINOR       8
-#define VOIN_VERSION_REVISION    1
+#define VOIN_VERSION_REVISION    2
 #define VOIN_VERSION_BUILD       0
 
 static const int VOIN_VERSION =

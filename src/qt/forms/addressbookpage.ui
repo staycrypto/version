@@ -33,7 +33,7 @@
       <string>Double-click to edit address or label</string>
      </property>
      <property name="styleSheet">
-      <string notr="true">QTableView { alternate-background-color: #808080; } QHeaderView { color: #000000; }</string>
+      <string notr="true">QTableView { alternate-background-color: #666666; } QHeaderView { color: #000000; }</string>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>

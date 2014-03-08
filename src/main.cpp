@@ -960,8 +960,10 @@ unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fP
     }
     else
     {
-	    printf("Retarget for Proof of Stake");
-	    // version: target change every block
+            if (fDebug)
+		    printf("Retarget for Proof of Stake");
+	
+            // version: target change every block
 	    // version: retarget with exponential moving toward target spacing    
 	    int64 nTargetSpacing = fProofOfStake? STAKE_TARGET_SPACING : min(nTargetSpacingWorkMax, (int64) STAKE_TARGET_SPACING * (1 + pindexLast->nHeight - pindexPrev->nHeight));
 	    int64 nInterval = nTargetTimespan / nTargetSpacing;
@@ -1027,12 +1029,14 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
 	    if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
 	    /// debug print
-	    printf("Difficulty Retarget - Kimoto Gravity Well\n");
-	    printf("BlockLastSolved height: %d  pindexLast height: %d\n", BlockLastSolved->nHeight, pindexLast->nHeight);
-	    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
-	    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
-	    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
-
+	    if (fDebug)
+	    {
+		    printf("Difficulty Retarget - Kimoto Gravity Well\n");
+		    printf("BlockLastSolved height: %d  pindexLast height: %d\n", BlockLastSolved->nHeight, pindexLast->nHeight);
+		    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
+		    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+		    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+	    }
 	return bnNew.GetCompact();
 }
 
@@ -1770,7 +1774,8 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     bnBestChainTrust = pindexNew->bnChainTrust;
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
-    printf("SetBestChain: new best=%s  height=%d  trust=%s  moneysupply=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainTrust.ToString().c_str(), FormatMoney(pindexBest->nMoneySupply).c_str());
+    if (fDebug)
+	    printf("SetBestChain: new best=%s  height=%d  trust=%s  moneysupply=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainTrust.ToString().c_str(), FormatMoney(pindexBest->nMoneySupply).c_str());
 
     std::string strCmd = GetArg("-blocknotify", "");
 
@@ -2112,7 +2117,9 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         if(mapBlockIndex.count(pblock->hashPrevBlock))
         {
 	 	int nHeight = mapBlockIndex[pblock->hashPrevBlock]->nHeight + 1;
-        	printf("ProcessBlock: nHeight: %d\n", nHeight);
+		if (fDebug)        	
+			printf("ProcessBlock: nHeight: %d\n", nHeight);
+	
 	    	if (!pblock->CheckBlock(nHeight))
         	    return error("ProcessBlock() : CheckBlock FAILED");
 	}
@@ -2139,13 +2146,17 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     CBlockIndex* pcheckpoint = Checkpoints::GetLastSyncCheckpoint();
     if (pcheckpoint && pblock->hashPrevBlock != hashBestChain && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
     {
-        printf("ProcessBlock: Extra sync checkpoint checks\n");
+	if (fDebug)
+	        printf("ProcessBlock: Extra sync checkpoint checks\n");
+
         // Extra checks to prevent "fill up memory by spamming with bogus blocks"
         int64 deltaTime = pblock->GetBlockTime() - pcheckpoint->nTime;
         CBigNum bnNewBlock;
         bnNewBlock.SetCompact(pblock->nBits);
         CBigNum bnRequired;
-        printf("ProcessBlock: ComputeMinWork for last block index\n");
+	if (fDebug)
+	        printf("ProcessBlock: ComputeMinWork for last block index\n");
+
         bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, pblock->IsProofOfStake())->nBits, deltaTime));
 
         if (bnNewBlock > bnRequired)
@@ -2163,7 +2174,8 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     // If don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
-        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+	if (fDebug)
+	        printf("ProcessBlock: ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
         CBlock* pblock2 = new CBlock(*pblock);
         // version: check proof-of-stake
         if (pblock2->IsProofOfStake())
@@ -2216,7 +2228,8 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
         mapOrphanBlocksByPrev.erase(hashPrev);
     }
 
-    printf("ProcessBlock: ACCEPTED\n");
+    if (fDebug)
+	    printf("ProcessBlock: ACCEPTED\n");
 
     // version: if responsible for sync-checkpoint send it
     if (pfrom && !CSyncCheckpoint::strMasterPrivKey.empty())
@@ -2986,7 +2999,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         {
             if (fShutdown)
                 return true;
-            printf("received getdata for: %s\n", inv.ToString().c_str());
+	    if (fDebug)
+	            printf("received getdata for: %s\n", inv.ToString().c_str());
 
             if (inv.type == MSG_BLOCK)
             {
@@ -3045,12 +3059,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             pindex = pindex->pnext;
         int nLimit = 500 + locator.GetDistanceBack();
         unsigned int nBytes = 0;
-        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
+	if (fDebug)
+	        printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
             if (pindex->GetBlockHash() == hashStop)
             {
-                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
+		if (fDebug)
+	                printf("  getblocks stopping at %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
                 // version: tell downloading node about the latest block if it's
                 // without risk being rejected due to stake connection check
                 if (hashStop != hashBestChain && pindex->GetBlockTime() + nStakeMinAge > pindexBest->GetBlockTime())
@@ -3065,7 +3081,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
             {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
+		if (fDebug)
+	                printf("  getblocks stopping at limit %d %s (%u bytes)\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str(), nBytes);
                 pfrom->hashContinue = pindex->GetBlockHash();
                 break;
             }
@@ -3183,19 +3200,23 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CBlock block;
         vRecv >> block;
 
-        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
+	if (fDebug)
+	        printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
         // block.print();
-
-        printf("CInv inv(MSG_BLOCK, block.GetHash())\n");
+	if (fDebug)
+        	printf("CInv inv(MSG_BLOCK, block.GetHash())\n");
         CInv inv(MSG_BLOCK, block.GetHash());
-        printf("pfrom->AddInventoryKnown\n");
+	if (fDebug) 	       
+		printf("pfrom->AddInventoryKnown\n");
         pfrom->AddInventoryKnown(inv);
 
-        printf("block: ProcessBlock\n");
+	if (fDebug)
+	        printf("block: ProcessBlock\n");
         if (ProcessBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
-
-        printf("block: check misbehaving");
+	
+	if (fDebug)
+	        printf("block: check misbehaving");
         if (block.nDoS) pfrom->Misbehaving(block.nDoS);
     }
 
@@ -3317,7 +3338,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
 
     // Update the last seen time for this node's address
-    printf("Update last seen time");
+    if (fDebug)
+	    printf("Update last seen time\n");
     if (pfrom->fNetworkNode)
         if (strCommand == "version" || strCommand == "addr" || strCommand == "inv" || strCommand == "getdata" || strCommand == "ping")
             AddressCurrentlyConnected(pfrom->addr);
@@ -3596,8 +3618,10 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
             const CInv& inv = (*pto->mapAskFor.begin()).second;
             if (!AlreadyHave(txdb, inv))
             {
-                printf("sending getdata: %s\n", inv.ToString().c_str());
-                vGetData.push_back(inv);
+		if (fDebug)
+                	printf("sending getdata: %s\n", inv.ToString().c_str());
+                
+		vGetData.push_back(inv);
                 if (vGetData.size() >= 1000)
                 {
                     pto->PushMessage("getdata", vGetData);
@@ -3753,7 +3777,9 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, CWallet* pwallet, bool fProofOfS
 
     if (fProofOfStake)  // attemp to find a coinstake
     {
-	printf("Attempt to find a coinstake");
+	if (fDebug)
+	     printf("Attempt to find a coinstake\n");
+
         pblock->nBits = GetNextTargetRequired(pindexPrev, true);
         CTransaction txCoinStake;
         int64 nSearchTime = txCoinStake.nTime; // search to current time
@@ -4066,7 +4092,7 @@ void BitcoinMiner(CWallet *pwallet, bool fProofOfStake)
         while (vNodes.empty() || IsInitialBlockDownload())
         {
             if(IsInitialBlockDownload())
-		printf("ThreadBitcoinMiner: Waiting for Initial Block Download");
+		printf("ThreadBitcoinMiner: Waiting for Initial Block Download\n");
             Sleep(1000);
             if (fShutdown)
                 return;

@@ -1017,10 +1017,17 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
 	if (PastBlocksMass >= PastBlocksMin) {
 	if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) { assert(BlockReading); break; }
 	}
-	if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
-	BlockReading = BlockReading->pprev;
+		if(BlockReading->nHeight > 55000)
+		{
+			const CBlockIndex* pPrev = GetLastBlockIndex(BlockReading, false);
+			if (pPrev == NULL) { assert(BlockReading); break; }
+			    BlockReading = pPrev;//BlockReading->pprev;		
+		}
+		else
+		{
+			BlockReading = BlockReading->pprev;
+		}
 	}
-
 	CBigNum bnNew(PastDifficultyAverage);
 	if (PastRateActualSeconds != 0 && PastRateTargetSeconds != 0) {
 	bnNew *= PastRateActualSeconds;
@@ -2047,8 +2054,8 @@ bool CBlock::AcceptBlock()
     int nHeight = pindexPrev->nHeight+1;
 
     // Check proof-of-work or proof-of-stake
-    if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
-        return DoS(100, error("AcceptBlock() : incorrect proof-of-work/proof-of-stake"));
+    if (nHeight > 41385 && nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
+        return DoS(100, error("AcceptBlock() : incorrect proof-of-work/proof-of-stake height: %d",nHeight));
 
     // Check timestamp against prev
     if (GetBlockTime() <= pindexPrev->GetMedianTimePast() || GetBlockTime() + nMaxClockDrift < pindexPrev->GetBlockTime())

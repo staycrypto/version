@@ -15,7 +15,7 @@
 #define CLIENT_VERSION_MAJOR       0
 #define CLIENT_VERSION_MINOR       8
 #define CLIENT_VERSION_REVISION    9
-#define CLIENT_VERSION_BUILD       5
+#define CLIENT_VERSION_BUILD       6
 
 static const int CLIENT_VERSION =
                            1000000 * CLIENT_VERSION_MAJOR
@@ -30,7 +30,7 @@ extern const std::string CLIENT_DATE;
 // version version - intended for display purpose ONLY
 #define VOIN_VERSION_MAJOR       0
 #define VOIN_VERSION_MINOR       8
-#define VOIN_VERSION_REVISION    5
+#define VOIN_VERSION_REVISION    6
 #define VOIN_VERSION_BUILD       0
 
 static const int VOIN_VERSION =
@@ -43,12 +43,12 @@ static const int VOIN_VERSION =
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 60003;
+static const int PROTOCOL_VERSION = 70003; //increment from 60003
 
 // earlier versions not supported as of Feb 2012, and are disconnected
 // NOTE: as of bitcoin v0.6 message serialization (vSend, vRecv) still
 // uses MIN_PROTO_VERSION(209), where message format uses PROTOCOL_VERSION
-static const int MIN_PROTO_VERSION = 209;
+static const int MIN_PROTO_VERSION = 209;//209;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this

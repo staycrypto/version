@@ -949,7 +949,9 @@ unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fP
     bnNew.SetCompact(pindexPrev->nBits);
     if(!fProofOfStake)
     {
-	static const int64	BlocksTargetSpacing	= 20; // 20 seconds
+	static const int64	BlocksTargetSpacing	= pindexLast->nHeight >= 75000 ? 60 : 20; // 20 seconds
+        //switch to 60 second block spacing at block 75000
+
 	unsigned int	TimeDaySeconds	= 60 * 60 * 24;
 	int64	PastSecondsMin	= TimeDaySeconds * 0.125;
 	int64	PastSecondsMax	= TimeDaySeconds * 7;
@@ -1019,7 +1021,7 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
 	}
 		if(BlockReading->nHeight > 55000)
 		{
-			const CBlockIndex* pPrev = GetLastBlockIndex(BlockReading, false);
+			const CBlockIndex* pPrev = GetLastBlockIndex(BlockReading->pprev, false);
 			if (pPrev == NULL) { assert(BlockReading); break; }
 			    BlockReading = pPrev;//BlockReading->pprev;		
 		}
@@ -1956,8 +1958,11 @@ bool CBlock::CheckBlock(int nHeight) const
         return DoS(100, error("CheckBlock() : size limits failed"));
 
     // Check proof of work matches claimed amount
+    if(nHeight<55000)
+    {
     if (IsProofOfWork() && !CheckProofOfWork(GetHash(), nBits))
         return DoS(50, error("CheckBlock() : proof of work failed"));
+    }
 
     // Check timestamp
     if (GetBlockTime() > GetAdjustedTime() + nMaxClockDrift)
@@ -2047,15 +2052,16 @@ bool CBlock::AcceptBlock()
         return error("AcceptBlock() : block already in mapBlockIndex");
 
     // Get prev block index
+    
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
     if (mi == mapBlockIndex.end())
         return DoS(10, error("AcceptBlock() : prev block not found"));
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
-
+    
     // Check proof-of-work or proof-of-stake
-    if (nHeight > 41385 && nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
-        return DoS(100, error("AcceptBlock() : incorrect proof-of-work/proof-of-stake height: %d",nHeight));
+    if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
+	return error("AcceptBlock() : incorrect proof-of-work/proof-of-stake height: %d",nHeight);
 
     // Check timestamp against prev
     if (GetBlockTime() <= pindexPrev->GetMedianTimePast() || GetBlockTime() + nMaxClockDrift < pindexPrev->GetBlockTime())
@@ -3806,8 +3812,10 @@ CBlock* CreateNewBlock(CReserveKey& reservekey, CWallet* pwallet, bool fProofOfS
             nLastCoinStakeSearchTime = nSearchTime;
         }
     }
-
-    pblock->nBits = GetNextTargetRequired(pindexPrev, pblock->IsProofOfStake());
+    else
+    {	
+        pblock->nBits = GetNextTargetRequired(pindexPrev, false); //pblock->IsProofOfStake());
+    }
 
     // Collect memory pool transactions into the block
     int64 nFees = 0;

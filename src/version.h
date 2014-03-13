@@ -15,7 +15,7 @@
 #define CLIENT_VERSION_MAJOR       0
 #define CLIENT_VERSION_MINOR       8
 #define CLIENT_VERSION_REVISION    9
-#define CLIENT_VERSION_BUILD       6
+#define CLIENT_VERSION_BUILD       7
 
 static const int CLIENT_VERSION =
                            1000000 * CLIENT_VERSION_MAJOR
@@ -30,7 +30,7 @@ extern const std::string CLIENT_DATE;
 // version version - intended for display purpose ONLY
 #define VOIN_VERSION_MAJOR       0
 #define VOIN_VERSION_MINOR       8
-#define VOIN_VERSION_REVISION    6
+#define VOIN_VERSION_REVISION    7
 #define VOIN_VERSION_BUILD       0
 
 static const int VOIN_VERSION =
@@ -43,12 +43,12 @@ static const int VOIN_VERSION =
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 70003; //increment from 60003
+static const int PROTOCOL_VERSION = 70004; //increment from 60003
 
 // earlier versions not supported as of Feb 2012, and are disconnected
 // NOTE: as of bitcoin v0.6 message serialization (vSend, vRecv) still
 // uses MIN_PROTO_VERSION(209), where message format uses PROTOCOL_VERSION
-static const int MIN_PROTO_VERSION = 209;//209;
+static const int MIN_PROTO_VERSION = 70004;//209;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this
@@ -56,7 +56,7 @@ static const int CADDR_TIME_VERSION = 31402;
 
 // only request blocks from nodes outside this range of versions
 static const int NOBLKS_VERSION_START = 32000;
-static const int NOBLKS_VERSION_END = 32400;
+static const int NOBLKS_VERSION_END = 70003;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;

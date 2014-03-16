@@ -932,23 +932,34 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
     return pindex;
 }
 
-unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
+unsigned int static GetNextTargetRequiredPow(const CBlockIndex* pindexLast)
 {
-    if (pindexLast == NULL)
-        return bnProofOfWorkLimit.GetCompact(); // genesis block
-    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
-    if (pindexPrev->pprev == NULL)
-        return bnInitialHashTarget.GetCompact(); // first block
-    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
-    if (pindexPrevPrev->pprev == NULL)
-        return bnInitialHashTarget.GetCompact(); // second block
-        
-    int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+	if(fDebug)
+		printf("Retarget for Proof of Work");
 
-    CBigNum bnNew;
-    bnNew.SetCompact(pindexPrev->nBits);
-    if(!fProofOfStake)
+    if (pindexLast == NULL)
     {
+        if(fDebug)
+           printf("GetNextTargetRequiredPow: pindexLast==NULL");
+        return bnProofOfWorkLimit.GetCompact(); // genesis block
+    }
+
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, false);
+    if (pindexPrev->pprev == NULL)
+    {
+        if(fDebug)
+           printf("GetNextTargetRequiredPow: pindexPrev->pprev==NULL");
+        return bnInitialHashTarget.GetCompact(); // first block
+    }
+
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, false);
+    if (pindexPrevPrev->pprev == NULL)
+    {
+        if(fDebug)
+           printf("GetNextTargetRequiredPow: pindexPrevPrev->pprev==NULL");
+        return bnInitialHashTarget.GetCompact(); // second block
+    }
+
 	static const int64	BlocksTargetSpacing	= pindexLast->nHeight >= 75000 ? 60 : 20; // 20 seconds
         //switch to 60 second block spacing at block 75000
 
@@ -959,24 +970,100 @@ unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fP
 	uint64	PastBlocksMax	= PastSecondsMax / BlocksTargetSpacing;	//7 days of blocks
 
  	return KimotoGravityWell(pindexLast, BlocksTargetSpacing, PastBlocksMin, PastBlocksMax); 
-    }
-    else
+}
+
+unsigned int static GetNextTargetRequiredPos(const CBlockIndex* pindexLast)
+{
+    if (pindexLast == NULL)
     {
-            if (fDebug)
-		    printf("Retarget for Proof of Stake");
-	
-            // version: target change every block
-	    // version: retarget with exponential moving toward target spacing    
-	    int64 nTargetSpacing = fProofOfStake? STAKE_TARGET_SPACING : min(nTargetSpacingWorkMax, (int64) STAKE_TARGET_SPACING * (1 + pindexLast->nHeight - pindexPrev->nHeight));
-	    int64 nInterval = nTargetTimespan / nTargetSpacing;
-	    bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
-	    bnNew /= ((nInterval + 1) * nTargetSpacing);
+        if(fDebug)
+           printf("GetNextTargetRequiredPos: pindexLast==NULL");
+        return bnProofOfWorkLimit.GetCompact(); // genesis block
     }
 
-    if (bnNew > bnProofOfWorkLimit)
-        bnNew = bnProofOfWorkLimit;
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, true);
+    if (pindexPrev->pprev == NULL)
+    {
+        if(fDebug)
+           printf("GetNextTargetRequiredPos: pindexPrev->pprev==NULL");
+        return bnInitialHashTarget.GetCompact(); // first block
+    }
 
-    return bnNew.GetCompact();
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, true);
+    if (pindexPrevPrev->pprev == NULL)
+    {
+        if(fDebug)
+           printf("GetNextTargetRequiredPos: pindexPrevPrev->pprev==NULL");
+        return bnInitialHashTarget.GetCompact(); // second block
+    }
+
+	bool fProofOfStake = true;	
+	int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+
+	CBigNum bnNew;
+	bnNew.SetCompact(pindexPrev->nBits);
+    
+        if (fDebug)
+    	    printf("Retarget for Proof of Stake");
+	
+        // version: target change every block
+	// version: retarget with exponential moving toward target spacing    
+	int64 nTargetSpacing = fProofOfStake? STAKE_TARGET_SPACING : min(nTargetSpacingWorkMax, (int64) STAKE_TARGET_SPACING * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+	int64 nInterval = nTargetTimespan / nTargetSpacing;
+	bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+	bnNew /= ((nInterval + 1) * nTargetSpacing);
+	
+	if (bnNew > bnProofOfWorkLimit)
+        	bnNew = bnProofOfWorkLimit;
+
+	return bnNew.GetCompact();
+
+}
+
+unsigned int static GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
+{        
+if (pindexLast == NULL)
+        return bnProofOfWorkLimit.GetCompact(); // genesis block
+
+    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+    if (pindexPrev->pprev == NULL)
+        return bnInitialHashTarget.GetCompact(); // first block
+    const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
+    if (pindexPrevPrev->pprev == NULL)
+        return bnInitialHashTarget.GetCompact(); // second block
+
+    if(pindexLast->nHeight <= 56457)
+    {
+	    if(!fProofOfStake)
+	    {
+		return GetNextTargetRequiredPow(pindexLast);
+	    }
+	    else
+	    {
+		return GetNextTargetRequiredPos(pindexLast);
+	    }
+    } 
+    else // back out KGW after block 56457
+    {
+        int64 nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
+
+	// version: target change every block
+	// version: retarget with exponential moving toward target spacing
+	CBigNum bnNew;
+	bnNew.SetCompact(pindexPrev->nBits);
+	int64 nTargetSpacing = fProofOfStake? STAKE_TARGET_SPACING : min(nTargetSpacingWorkMax, (int64) STAKE_TARGET_SPACING * (1 + pindexLast->nHeight - pindexPrev->nHeight));
+	if(pindexLast->nHeight > 56458 && !fProofOfStake)
+	    nTargetSpacing = 60; // 60 second PoW block target after block 56458
+
+	int64 nInterval = nTargetTimespan / nTargetSpacing;
+	bnNew *= ((nInterval - 1) * nTargetSpacing + nActualSpacing + nActualSpacing);
+	bnNew /= ((nInterval + 1) * nTargetSpacing);
+
+	if (bnNew > bnProofOfWorkLimit)
+	    bnNew = bnProofOfWorkLimit;
+
+	return bnNew.GetCompact();
+    }
 }
 
 unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 TargetBlocksSpacingSeconds, uint64 PastBlocksMin, uint64 PastBlocksMax) {
@@ -1016,8 +1103,12 @@ unsigned int static KimotoGravityWell(const CBlockIndex* pindexLast, uint64 Targ
 	EventHorizonDeviationFast	= EventHorizonDeviation;
 	EventHorizonDeviationSlow	= 1 / EventHorizonDeviation;
 
-	if (PastBlocksMass >= PastBlocksMin) {
-	if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) { assert(BlockReading); break; }
+	if (PastBlocksMass >= PastBlocksMin) 
+	{
+		if ((PastRateAdjustmentRatio <= EventHorizonDeviationSlow) || (PastRateAdjustmentRatio >= EventHorizonDeviationFast)) 
+		{ 
+			assert(BlockReading); break; 
+		}
 	}
 		if(BlockReading->nHeight > 55000)
 		{
@@ -1953,12 +2044,16 @@ bool CBlock::CheckBlock(int nHeight) const
     // These are checks that are independent of context
     // that can be verified before saving an orphan block.
 
+    if(GetHash() == uint256("0x00000014b70c3c0123c1150e27822c93afaf806a89f75f8c5c21a09b95bcbfab") ||
+       GetHash() == uint256("0x0000000be615014362402c2171d6a8b6d8654c4adfa1277ce9488fb27fd024e9"))
+        return error("Checkblock(): Invalid block hash");
+
     // Size limits
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
         return DoS(100, error("CheckBlock() : size limits failed"));
 
     // Check proof of work matches claimed amount
-    if(nHeight<55000)
+    if(nHeight>55000)
     {
     if (IsProofOfWork() && !CheckProofOfWork(GetHash(), nBits))
         return DoS(50, error("CheckBlock() : proof of work failed"));

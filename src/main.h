@@ -32,8 +32,8 @@ static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
-static const int64 MIN_TX_FEE = CENT;
-static const int64 MIN_RELAY_TX_FEE = CENT;
+static const int64 MIN_TX_FEE = CENT / 1000;
+static const int64 MIN_RELAY_TX_FEE = CENT / 1000;
 //static const int64 MAX_MONEY = 2500000 * COIN;
 // Bugfix:
 // Bump up MAX_MONEY so there is headroom for stake/interest payments
